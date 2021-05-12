@@ -60,35 +60,47 @@ public class CollectController {
         return null;
     }
 
-    private Mono<CardData> getCardData(String uri) {
+    private Mono<CardData> getCardData(String uri, Integer seq) {
         return this.cardWebClient.get()
-                .uri(uri)
+                .uri(uriBuilder -> uriBuilder.path(uri).queryParam("seq", seq).build())
                 .retrieve()
                 .bodyToMono(CardData.class)
                 .retryWhen(
                         Retry.backoff(3, Duration.ofMillis(5))
                                 .filter(throwable -> throwable instanceof TimeoutException)
-                );
+                                .onRetryExhaustedThrow((x, y) -> {
+                                    return new RuntimeException();
+                                })
+
+                )
+                .onErrorReturn(new CardData(0, "Error"));
     }
 
     private Mono<?> zipMonos(List<EndPoint> endPointList) {
         List<Mono<CardData>> monoList = new ArrayList<>();
         for (EndPoint endpoint : endPointList) {
-            monoList.add(getCardData(endpoint.getEndPoint()));
+            monoList.add(getCardData(endpoint.getEndPoint(), endpoint.getSeq()));
         }
 
-        var result = Mono.zip(monoList, Arrays::asList).flatMapIterable(x -> x)
-                .doOnEach(x -> {
-                    log.info("################ " + x.toString());
-                })
-                .doOnComplete(() -> log.info("################ done"));
+        var result = Mono.zip(monoList, x -> {
+            for (Object obj : x) {
+                log.info("###################### obj: {}", obj.toString());
+            }
+            return x;
+        });
+
+//        var result = Mono.zip(monoList, Arrays::asList).flatMapIterable(x -> x)
+//                .doOnEach(x -> {
+//                    log.info("################ " + x.toString());
+//                })
+//                .doOnComplete(() -> log.info("################ done"));
 //
 //        var result = Mono.zip(monoList, Arrays::asList)
 //                .doOnEach(x -> {
 //                    log.info("################ " + x.toString());
 //                });
 
-        return result.collectList();
+        return result;
 
 //        return Mono.zip(monoList, Arrays::asList);
     }

@@ -24,8 +24,8 @@ public class WebClientUtils {
                 .tcpConfiguration(client ->
                         client.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
                                 .doOnConnected(conn -> conn
-                                        .addHandlerLast(new ReadTimeoutHandler(10))
-                                        .addHandlerLast(new WriteTimeoutHandler(10))));
+                                        .addHandlerLast(new ReadTimeoutHandler(3))
+                                        .addHandlerLast(new WriteTimeoutHandler(3))));
         return new ReactorClientHttpConnector(httpClient.wiretap(true));
     }
 
