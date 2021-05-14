@@ -10,13 +10,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -41,7 +40,7 @@ public class CollectController {
         cardEndPointList = new ArrayList<>();
         cardEndPointList.add(new EndPoint("/card", "/card", 1));
         cardEndPointList.add(new EndPoint("/card/approval-domestic", "/card", 2));
-        cardEndPointList.add(new EndPoint("/card/approval-overseas", "/card", 3));
+//        cardEndPointList.add(new EndPoint("/card/approval-overseas", "/card", 3));
     }
 
     private boolean isSeqYn(List<EndPoint> list) {
@@ -61,33 +60,32 @@ public class CollectController {
     }
 
     private Mono<CardData> getCardData(String uri, Integer seq) {
+//        this.cardWebClient.get().uri(uriBuilder -> uriBuilder.path(uri).queryParam("seq", seq).build()).retrieve().bodyToMono(CardData.class);
+
+
         return this.cardWebClient.get()
                 .uri(uriBuilder -> uriBuilder.path(uri).queryParam("seq", seq).build())
                 .retrieve()
                 .bodyToMono(CardData.class)
-                .retryWhen(
-                        Retry.backoff(3, Duration.ofMillis(5))
-                                .filter(throwable -> throwable instanceof TimeoutException)
-                                .onRetryExhaustedThrow((x, y) -> {
-                                    return new RuntimeException();
-                                })
-
-                )
+                .retryWhen(Retry.backoff(3, Duration.ofMillis(5))
+                        .filter(throwable -> throwable instanceof TimeoutException)
+                        .onRetryExhaustedThrow((x, y) -> new RuntimeException()))
                 .onErrorReturn(new CardData(0, "Error"));
     }
 
-    private Mono<?> zipMonos(List<EndPoint> endPointList) {
+    // 병렬실행
+    private Mono<?> zipMonos1(List<EndPoint> endPointList) {
         List<Mono<CardData>> monoList = new ArrayList<>();
         for (EndPoint endpoint : endPointList) {
-            monoList.add(getCardData(endpoint.getEndPoint(), endpoint.getSeq()));
+            monoList.add(getCardData(endpoint.getEndPoint(), endpoint.getSeq()).subscribeOn(Schedulers.elastic()));
         }
 
-        var result = Mono.zip(monoList, x -> {
-            for (Object obj : x) {
-                log.info("###################### obj: {}", obj.toString());
-            }
-            return x;
-        });
+//        var result = Mono.zip(monoList, x -> {
+//            for (Object obj : x) {
+//                log.info("###################### obj: {}", obj.toString());
+//            }
+//            return x;
+//        });
 
 //        var result = Mono.zip(monoList, Arrays::asList).flatMapIterable(x -> x)
 //                .doOnEach(x -> {
@@ -99,11 +97,33 @@ public class CollectController {
 //                .doOnEach(x -> {
 //                    log.info("################ " + x.toString());
 //                });
+//
+//        return result;
 
-        return result;
+        return Mono.zip(monoList, Arrays::asList);
 
 //        return Mono.zip(monoList, Arrays::asList);
     }
+
+    // 순차실행
+//    private Mono<?> zipMonos2(List<EndPoint> endPointList) {
+//        List<Mono<CardData>> monoList = new ArrayList<>();
+//        for (EndPoint endpoint : endPointList) {
+//            monoList.add(getCardData(endpoint.getEndPoint(), endpoint.getSeq()));
+//        }
+//
+//
+//
+//
+//        var response = null;
+//
+//
+//
+//
+//
+//
+//        return response;
+//    }
 
     @GetMapping(value = "/account")
     public String getAccount() {
@@ -112,6 +132,28 @@ public class CollectController {
 
     @GetMapping(value = "/card")
     public Mono<?> getCard() {
-        return zipMonos(cardEndPointList);
+//        return zipMonos1(cardEndPointList).block();
+        return zipMonos1(cardEndPointList);
+//        return this.cardWebClient.get().uri(uriBuilder -> uriBuilder.path("/card").queryParam("seq", 1).build()).retrieve().bodyToMono(CardData.class).block();
+
+//        Map<String, Object> result = new HashMap<>();
+////        result.put("data1", zipMonos1(cardEndPointList));
+//        result.put("data2", this.cardWebClient.get().uri(uriBuilder -> uriBuilder.path("/card").queryParam("seq", 1).build()).retrieve().bodyToMono(CardData.class));
+//        result.put("globId", "#####1234");
+//
+//        return result;
+    }
+
+    @GetMapping(value = "/card-to-map")
+    public Map<String, Object> getCardToMap() {
+        Mono<CardData> data = this.cardWebClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/card").queryParam("seq", 1)
+                        .build()).retrieve().bodyToMono(CardData.class);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data1", zipMonos1(cardEndPointList).block());
+        result.put("data2", data.block());
+        result.put("globId", "#####1234");
+        return result;
     }
 }
