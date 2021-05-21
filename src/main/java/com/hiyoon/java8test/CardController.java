@@ -3,7 +3,6 @@ package com.hiyoon.java8test;
 import io.netty.handler.timeout.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,35 +12,17 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.*;
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/collect")
-public class CollectController {
+@RequestMapping(value = "/mgw-card")
+public class CardController {
 
-    private static List<EndPoint> cardEndPointList;
-    private static List<EndPoint> accountEndPointList;
     private final WebClient accountWebClient;
     private final WebClient cardWebClient;
-
-    @PostConstruct
-    public static void setData() {
-        // account
-        accountEndPointList = new ArrayList<>();
-        accountEndPointList.add(new EndPoint("/account/deposit/basic", "/account", 0));
-        accountEndPointList.add(new EndPoint("/account/deposit/detail", "/account", 0));
-        accountEndPointList.add(new EndPoint("/account/deposit/transactions", "/account", 0));
-
-        // card
-        cardEndPointList = new ArrayList<>();
-        cardEndPointList.add(new EndPoint("/card", "/card", 1));
-        cardEndPointList.add(new EndPoint("/card/approval-domestic", "/card", 2));
-//        cardEndPointList.add(new EndPoint("/card/approval-overseas", "/card", 3));
-    }
 
     private boolean isSeqYn(List<EndPoint> list) {
         boolean result = false;
@@ -133,7 +114,7 @@ public class CollectController {
     @GetMapping(value = "/card")
     public Mono<?> getCard() {
 //        return zipMonos1(cardEndPointList).block();
-        return zipMonos1(cardEndPointList);
+        return zipMonos1(CommonData.getCardEndPointList());
 //        return this.cardWebClient.get().uri(uriBuilder -> uriBuilder.path("/card").queryParam("seq", 1).build()).retrieve().bodyToMono(CardData.class).block();
 
 //        Map<String, Object> result = new HashMap<>();
@@ -151,7 +132,7 @@ public class CollectController {
                         .build()).retrieve().bodyToMono(CardData.class);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("data1", zipMonos1(cardEndPointList).block());
+        result.put("data1", zipMonos1(CommonData.getCardEndPointList()).block());
         result.put("data2", data.block());
         result.put("globId", "#####1234");
         return result;

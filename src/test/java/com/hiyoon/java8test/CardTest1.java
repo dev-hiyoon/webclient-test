@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class Test5 {
+public class CardTest1 {
 
     @Autowired
     private MockMvc mockMvc;
@@ -82,7 +82,7 @@ public class Test5 {
                 .withHeader("Content-Type", "application/json")
                 .withBody(cardJson)));
 
-        ResultActions perform = mockMvc.perform(MockMvcRequestBuilders.get("/collect/card-to-map")
+        ResultActions perform = mockMvc.perform(MockMvcRequestBuilders.get("/mgw-card/card-to-map")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andDo(print());

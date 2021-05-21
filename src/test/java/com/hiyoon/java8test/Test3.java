@@ -19,7 +19,7 @@ public class Test3 {
     private ApplicationContext context;
 
     @Autowired
-    private CollectController collectController;
+    private CardController collectController;
 
     static MockWebServer mockWebServer;
 
