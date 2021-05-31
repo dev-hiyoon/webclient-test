@@ -1,0 +1,32 @@
+package com.hiyoon.java8test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+
+public class CommonData {
+    private static List<EndPoint> cardEndPointList;
+    private static List<EndPoint> accountEndPointList;
+
+    public static List<EndPoint> getCardEndPointList() {
+        if (cardEndPointList == null) {
+            cardEndPointList = new ArrayList<>();
+            cardEndPointList.add(new EndPoint("/card", "/card", 1));
+            cardEndPointList.add(new EndPoint("/card/approval-domestic", "/card", 2));
+            cardEndPointList.add(new EndPoint("/card/approval-overseas", "/card", 3));
+        }
+
+        return cardEndPointList;
+    }
+
+    public static List<EndPoint> getAccountEndPointList() {
+        if (accountEndPointList == null) {
+            accountEndPointList = new ArrayList<>();
+            accountEndPointList.add(new EndPoint("/account/deposit/basic", "/account", 0));
+            accountEndPointList.add(new EndPoint("/account/deposit/detail", "/account", 0));
+            accountEndPointList.add(new EndPoint("/account/deposit/transactions", "/account", 0));
+        }
+
+        return accountEndPointList;
+    }
+}
