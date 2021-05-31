@@ -23,17 +23,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @RequestMapping(value = "/mgw-log")
 public class LogController {
-    private final WebClient logWebClient;
+    private final WebClient logFilterWebClient;
 
     private Mono<AccountData> getAccountData(String uri, Integer seq) {
-        return this.logWebClient.get()
+        return this.logFilterWebClient.get()
                 .uri(uriBuilder -> uriBuilder.path(uri).queryParam("seq", seq).build())
                 .retrieve()
                 .bodyToMono(AccountData.class)
                 .retryWhen(Retry.backoff(3, Duration.ofMillis(5))
                         .filter(throwable -> throwable instanceof TimeoutException)
                         .onRetryExhaustedThrow((x, y) -> new RuntimeException()))
-                .onErrorReturn(new AccountData(0, "Error"));
+                .onErrorReturn(new AccountData(0, "Error"))
+                .flatMap(x -> {
+                    return Mono.just(x);});
     }
 
     private List getAccountList(List<EndPoint> endPointList) {

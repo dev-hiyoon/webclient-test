@@ -16,6 +16,7 @@ import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 import java.net.URI;
@@ -74,4 +75,26 @@ public class WebClientUtils {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
+
+    @Bean
+    public WebClient logFilterWebClient() {
+        return WebClient.builder()
+                .baseUrl(cardServiceUrl)
+                .filters(exchangeFilterFunctions -> {
+                    exchangeFilterFunctions.addAll(LogFilters.prepareFilters());
+                })
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
+
+//    @Bean
+//    public WebClient logNettyWebClient() {
+//        reactor.netty.http.client.HttpClient httpClient = HttpClient.create()
+//                .wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
+//        return WebClient.builder()
+//                .baseUrl(cardServiceUrl)
+//                .clientConnector(new ReactorClientHttpConnector(httpClient))
+//                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+//                .build();
+//    }
 }
