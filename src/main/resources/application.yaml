@@ -1,1 +1,7 @@
 card.service.url: http://localhost:9090
+logging:
+  level:
+    reactor:
+      netty:
+        http:
+          client: TRACE
